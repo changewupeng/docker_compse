@@ -1,0 +1,11 @@
+mysql/data
+mysql/logs
+mysql/mysqld.socket.lock
+
+nginx/html
+nginx/logs
+
+redis/data
+redis/logs
+
+rocketmq/data

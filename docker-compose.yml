@@ -1,0 +1,96 @@
+version: "3.8"
+services:
+ redis:
+  image: redis
+  container_name: redis-local
+  expose:
+   - "6379"
+  ports: 
+   - "16379:6379"
+  volumes: 
+   - "D:/ProgramFiles/dkContainer/redis/conf/redis.conf:/etc/redis/redis.conf"
+  command:
+   - redis-server
+   - /etc/redis/redis.conf
+ rocketmq-server:
+   image: rocketmqinc/rocketmq:4.4.0
+   container_name: rmqnamesrv
+   expose:
+    - "9876"
+   ports:
+    - "9876:9876"
+   volumes:
+    - D:/ProgramFiles/dkContainer/rocketmq/data/namesrv/logs:/root/logs
+    - D:/ProgramFiles/dkContainer/rocketmq/data/namesrv/store:/root/store
+   environment:
+    MAX_POSSIBLE_HEAP: 100000000
+    TZ: Asia/Shanghai
+   command:
+    - sh 
+    - mqnamesrv 
+ rmqbroker:
+   image: rocketmqinc/rocketmq:4.4.0
+   container_name: rmqbroker
+   ports:
+    - "10911:10911"
+    - "10909:10909"
+   volumes:
+    - D:/ProgramFiles/dkContainer/rocketmq/data/broker/logs:/root/logs
+    - D:/ProgramFiles/dkContainer/rocketmq/data/broker/store:/root/store
+    - D:/ProgramFiles/dkContainer/rocketmq/conf/broker.conf:/opt/rocketmq/conf/broker.conf
+   depends_on: 
+    - rocketmq-server
+   links:
+    - "rocketmq-server"
+   environment:
+    NAMESRV_ADDR: "rocketmq-server:9876"
+    MAX_POSSIBLE_HEAP: 200000000
+    TZ: Asia/Shanghai
+   command:
+    - sh 
+    - mqbroker
+    - -c
+    - /opt/rocketmq/conf/broker.conf
+ rmqconsole:
+   image: pangliang/rocketmq-console-ng
+   container_name: rmqconsole
+   ports:
+    - "9888:8080"
+   depends_on: 
+    - rmqbroker
+   links:
+    - "rocketmq-server"
+   environment:
+    TZ: Asia/Shanghai
+    JAVA_OPTS: "-Drocketmq.namesrv.addr=rocketmq-server:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false"
+ nginx-service:
+   image: nginx:1.19
+   container_name: nginx-local
+   ports:
+    - "3000:80"
+    - "3002:3000"
+   volumes:
+    - D:/Project/:/app/project/
+    - D:/ProgramFiles/dkContainer/nginx/conf/nginx.conf:/etc/nginx/nginx.conf
+    - D:/ProgramFiles/dkContainer/nginx/:/app/nginx/
+   environment:
+    TZ: Asia/Shanghai
+   command:
+    - nginx
+    - -c
+    - /etc/nginx/nginx.conf
+    - -g 
+    - "daemon off;"
+ mysqld-service:
+   image: mysql:5.7
+   container_name: mysql-local
+   ports:
+    - "3306:3306"
+   volumes:
+    - "D:/ProgramFiles/dkContainer/mysql:/app/mysql"
+   environment:
+    TZ: Asia/Shanghai
+   command:
+    - mysqld_safe
+    - --defaults-file=/app/mysql/conf/my.cnf
+ 
